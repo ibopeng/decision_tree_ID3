@@ -1,5 +1,5 @@
 """
-Decision tree learning algorithm, ID3
+Project: Decision tree learning algorithm, ID3
 
 Build a ID3 like decision tree
 

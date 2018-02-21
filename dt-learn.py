@@ -1,5 +1,5 @@
 """
-Decision tree learning algorithm, ID3
+Project: Decision tree learning algorithm, ID3
 
 Main script for running ID3
 
