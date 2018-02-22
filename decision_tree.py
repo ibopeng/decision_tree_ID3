@@ -7,6 +7,7 @@ Build a ID3 like decision tree
 @ University of Wisconsin - Madison
 """
 import numpy as np
+import scipy as sp
 
 
 def comp_entropy(instance_label, label_range):
@@ -83,8 +84,9 @@ def numeric_split_min_entropy_threshold(instance_data, var_idx, label_range):
     var_val = [ins[var_idx] for ins in instance_data]
 
     # compute midpoints of adjacent sorted variable values
-    nparray = np.sort(np.unique(np.array(var_val)))
-    threshold_list = np.divide(np.add(nparray[0:-1], nparray[1:]), 2.0)
+    var_val_sort = np.sort(np.array(var_val)) # sort numeric variable values
+    midpoint_list = np.divide(np.add(var_val_sort[0:-1], var_val_sort[1:]), 2.0) # compute midpoints of adjacent values
+    threshold_list = np.unique(midpoint_list) # extract unique midpoints as thresholds
 
     # loop over the threshold list to find the threshold which produces minimum entropy
     entropy_list = []
@@ -151,6 +153,46 @@ def comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, 
 
     return info_gain
 
+def is_node_same_class(instance_data):
+    """
+    Check if all of the training instances reaching the node belong to the same class
+    :param instance_data:
+    :return: True if all same class, otherwise False
+    """
+    # extract labels of the instance data
+    instance_label = [ins[-1] for ins in instance_data]
+
+    # if all instance of this node belong to the same class, the number of unique values of labels should be 1
+    if len(set(instance_label)) == 1: # "set" is a function for Unordered collections of unique elements
+        return True
+
+    return False
+
+def stop_grow_tree(instance_data, info_gain, var_in_tree, m):
+    """
+    Check if to stop growing the subtree
+    :param instance_data:
+    :param info_gain:
+    :param var_in_tree:
+    :param m:
+    :return:
+    """
+    # note that the array [info_gain] contains np.nan value
+    # extract non-nan value in "info_gain" array
+    info_gain = np.array(info_gain)
+    info_gain = info_gain[~np.isnan(info_gain)]
+
+    # One of the following criteria should be met to stop growing the tree
+    # (1) all of the training instances reaching the node belong to the same class, or
+    # (2) there are fewer than m training instances reaching the node, where m is provided as input to the program, or
+    # (3) no feature has positive information gain, or
+    # (4) there are no more remaining candidate splits at the node.
+    if is_node_same_class(instance_data) or len(instance_data) < m or all(sp.less_equal(info_gain, 0)) or all(var_in_tree):
+        return True
+
+    return False
+
+
 def makeSubtree(instance_data, label_range, var_name_tree, var_in_tree, var_val_cur, num_var, var_types, var_names, var_range):
     """
     Build the decision tree
@@ -161,10 +203,15 @@ def makeSubtree(instance_data, label_range, var_name_tree, var_in_tree, var_val_
     :return: decision_tree_ID3: a sub tree
     """
 
+    decision_tree_ID3 = 47 # delete this line when completing the program
+
     # compute the current information gain to check if stop or not
     info_gain = comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_range)
 
+    if stop_grow_tree(instance_data, info_gain, var_in_tree, 5):
+        is_leaf = True
+        return is_leaf
 
-    decision_tree_ID3 = 47
+
     return decision_tree_ID3
 

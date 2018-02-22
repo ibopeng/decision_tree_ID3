@@ -12,6 +12,11 @@ import load_data as ld
 import decision_tree as dt
 import numpy as np
 
+#############
+tt = [0.8, 0.3, np.nan, 0.4, np.nan, 8.3]
+tt = np.array(tt)
+tn = ~np.isnan(tt)
+###############
 
 """ Run the decision tree ID3 using terminal command line"""
 # get arguments from terminal command line
@@ -21,9 +26,6 @@ import numpy as np
 """ Load training data and testing data, and corresponding parameters"""
 instance_data_trn, meta_data, var_range, var_unique_val = ld.load_data('credit_train.arff')
 
-midpt = np.median(np.array(var_unique_val[6]))
-
-tt = (meta_data.types()[1] == 'nominal')
 
 # variables already in tree or not, bool type, True and False
 num_var = len(meta_data.types())
@@ -40,6 +42,8 @@ var_names = meta_data.names()
 var_val_cur = None
 var_name_tree = None # this para should be taken good care of
 decision_tree_ID3 = dt.makeSubtree(instance_data_trn, label_range, var_name_tree, var_in_tree, var_val_cur, num_var, var_types, var_names, var_range)
+
+
 
 print("Debug...")
 
