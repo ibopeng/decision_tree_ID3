@@ -19,16 +19,27 @@ import numpy as np
 #filename_trn, filename_test, m = ld.read_cmdln_arg()
 
 """ Load training data and testing data, and corresponding parameters"""
-instance_data_trn, meta_data, var_range, var_unique_val= ld.load_data('credit_train.arff')
+instance_data_trn, meta_data, var_range, var_unique_val = ld.load_data('credit_train.arff')
 
-var_in_tree = np.zeros((len(meta_data.types()) - 1,), dtype=bool)
-target_label = var_range[-1]
+midpt = np.median(np.array(var_unique_val[6]))
+
+tt = (meta_data.types()[1] == 'nominal')
+
+# variables already in tree or not, bool type, True and False
+num_var = len(meta_data.types())
+var_types = meta_data.types()
+var_names = meta_data.names()
+
+var_in_tree = np.zeros(num_var - 1, dtype=bool)
+# the range of instances labels, i.e., '+' and '-'
+label_range = var_range[-1]
+# name of each variable
 var_names = meta_data.names()
 
 # build the tree
 var_val_cur = None
 var_name_tree = None # this para should be taken good care of
-decision_tree_ID3 = dt.makeSubtree(instance_data_trn, var_name_tree, var_in_tree, var_val_cur)
+decision_tree_ID3 = dt.makeSubtree(instance_data_trn, label_range, var_name_tree, var_in_tree, var_val_cur, num_var, var_types, var_names, var_range)
 
 print("Debug...")
 

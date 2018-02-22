@@ -63,3 +63,67 @@ print(len(instance))
 
 str = "@attribute 'A5' { g, p, gg }"
 print extract_attribute_value(str)
+
+
+def comp_entropy_numeric(instance_entire, label_range, var_idx):
+    """
+    Compute sum of entropy of each instance subset after split for numeric variable
+    :param instance_data:
+    :param var_idx:
+    :return:
+    """
+    # if len(data_) == 0: raise Exception('ERROR: the input data set is empty')
+    # extract the value of the ith variable, i = var_idx
+    var_val = [ins[var_idx] for ins in instance_entire]
+    # find median point of this numeric array for the ith variable, i = var_idx
+    var_median = np.median(np.array(var_val))
+
+    instance_split = split_data_numeric(instance_entire, var_idx, var_median)
+
+    entropy = 0
+
+    for instance_sub in instance_split:  # loop to compute entropy of each instance subset
+        # collect all class labels
+        classLabels = [ins[-1] for ins in instance_sub]
+        # weight the entropy by the occurence
+        p_x = 1.0 * len(instance_sub) / len(instance_entire)
+        entropy += p_x * comp_entropy(classLabels, label_range)
+
+    return entropy
+
+
+
+def comp_entropy_nominal(instance_entire, label_range, var_idx, this_var_range):
+    """
+    Compute the sum of entropy of each instance subset for nominal variables
+    :param instance_entire:
+    :param label_range:
+    :param var_idx:
+    :param this_var_range:
+    :return:
+    """
+    if len(instance_entire) == 0:
+        return 0
+    entropy = 0
+
+    # split the data with the ith attribute/variable, i = var_idx
+    instance_split = split_data_nominal(instance_entire, var_idx, this_var_range)
+
+    for instance_sub in instance_split: # loop to compute entropy of each instance subset
+        # collect all class labels
+        classLabels = [ins[-1] for ins in instance_sub]
+        # weight the entropy by the occurence
+        p_x = 1.0 * len(instance_sub) / len(instance_entire)
+        entropy += p_x * comp_entropy(classLabels, label_range)
+
+    return entropy
+
+
+# extract the value of the ith variable, i = var_idx
+var_val = [ins[var_idx] for ins in instance_data]
+# find median point of this numeric array for the ith variable, i = var_idx
+var_median = np.median(np.array(var_val))
+# split data, median point is set to be the threshold
+instance_split = split_data_numeric(instance_data, var_idx, var_median)
+# compute the sum of entropy of each instance subset after split
+entropy = comp_entropy_split_post(instance_split, instance_data, label_range)
