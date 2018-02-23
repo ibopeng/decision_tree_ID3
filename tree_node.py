@@ -19,3 +19,16 @@ class tree_node:
     is_leaf = False
     threshold = 0
     branch = None
+    depth = 0
+    var_idx = 0
+
+    def print_tree(self):
+        node_var_name = str(self.var_name).replace('A', 'a')
+        for child in self.children:
+            if not child.is_leaf:
+                print(self.depth * '|\t' + node_var_name + ' ' + child.branch + ' [' + str(
+                    child.num_label_0) + ' ' + str(child.num_label_1) + ']')
+            else:
+                print(self.depth * '|\t' + node_var_name + ' ' + child.branch + ' [' + str(
+                    child.num_label_0) + ' ' + str(child.num_label_1) + ']: ' + child.major_label)
+            child.print_tree()

@@ -12,11 +12,7 @@ import load_data as ld
 import decision_tree as dt
 import numpy as np
 
-#############
-tt = [0.8, 0.3, np.nan, 0.4, np.nan, 8.3]
-tt = np.array(tt)
-tn = ~np.isnan(tt)
-###############
+
 
 """ Run the decision tree ID3 using terminal command line"""
 # get arguments from terminal command line
@@ -39,11 +35,9 @@ label_range = var_ranges[-1]
 var_names = meta_data.names()
 
 # build the tree
-var_val_cur = None
-var_name_tree = None # this para should be taken good care of
-decision_tree_ID3 = dt.makeSubtree(instance_data_trn, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, None)
+dt_root = dt.makeSubtree(instance_data_trn, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, None)
 
+dt_root.print_tree()
 
-
-print("Debug...")
+print("Well done...")
 

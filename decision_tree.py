@@ -83,7 +83,6 @@ def comp_entropy_split_post(instance_split, instance_entire, label_range):
     return entropy
 
 def numeric_split_min_entropy_threshold(instance_data, var_idx, label_range):
-    # test if the length of instance data is 0 or 1 or 2, in case index error in array
 
     # extract the value of the ith variable, i = var_idx
     var_val = [ins[var_idx] for ins in instance_data]
@@ -178,7 +177,8 @@ def is_node_same_class(instance_data):
 
     return False
 
-def stop_grow_tree(instance_data, info_gain, var_in_tree, m):
+
+def stop_grow_tree(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, m):
     """
     Check if to stop growing the subtree
     :param instance_data:
@@ -187,17 +187,28 @@ def stop_grow_tree(instance_data, info_gain, var_in_tree, m):
     :param m:
     :return:
     """
-    # note that the array [info_gain] contains np.nan value
-    # extract non-nan value in "info_gain" array
-    info_gain = np.array(info_gain)
-    info_gain = info_gain[~np.isnan(info_gain)]
+
 
     # One of the following criteria should be met to stop growing the tree
     # (1) all of the training instances reaching the node belong to the same class, or
     # (2) there are fewer than m training instances reaching the node, where m is provided as input to the program, or
     # (3) no feature has positive information gain, or
     # (4) there are no more remaining candidate splits at the node.
-    if is_node_same_class(instance_data) or len(instance_data) < m or all(sp.less_equal(info_gain, 0)) or all(var_in_tree):
+
+    if len(instance_data) < m:
+        return True
+
+    if is_node_same_class(instance_data):
+        return True
+
+    # compute information gain
+    # note that the array [info_gain] contains np.nan value
+    # extract non-nan value in "info_gain" array
+    # compute the current information gain to check if stop or not
+    info_gain = comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges)
+    info_gain = np.array(info_gain)
+    info_gain = info_gain[~np.isnan(info_gain)]
+    if all(sp.less_equal(info_gain, 0)):
         return True
 
     return False
@@ -242,23 +253,33 @@ def makeSubtree(instance_data, label_range, var_in_tree, num_var, var_types, var
     :return: decision_tree_ID3: a sub tree
     """
 
-    decision_tree_ID3 = 47 # delete this line when completing the program
-
     # compute the current information gain to check if stop or not
-    info_gain = comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges)
+#    info_gain = comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges)
 
     # create a node
     node = tn.tree_node()
     node.parent = node_parent
+    node.children = []
+    if node_parent is not None:
+        node.depth = node_parent.depth + 1
+    else:
+        node.depth = 0
 
     # if this is a leaf node
-    if stop_grow_tree(instance_data, info_gain, var_in_tree, 5):
+#    if stop_grow_tree(instance_data, info_gain, var_in_tree, 5):
+#        node.is_leaf = True
+#        node.major_label, node.num_label_0, node.num_label_1 = num_node_instance_pos_neg(instance_data, label_range, node_parent)
+#        return node
+
+    if stop_grow_tree(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, 5):
         node.is_leaf = True
         node.major_label, node.num_label_0, node.num_label_1 = num_node_instance_pos_neg(instance_data, label_range, node_parent)
+        node.var_name = 'leaf'
         return node
 
-    # if this not a leaf node, start spliting
+    # if this not a leaf node, start split
     else:
+        info_gain = comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges)
         var_split_idx = np.argmax(info_gain) # find the index of the variable for best split
 
         # start creating the tree
@@ -266,6 +287,7 @@ def makeSubtree(instance_data, label_range, var_in_tree, num_var, var_types, var
         node.is_leaf = False
         node.var_name = var_names[var_split_idx]
         node.node_type = var_types[var_split_idx]
+        node.var_idx = var_split_idx
         node.major_label, node.num_label_0, node.num_label_1 = num_node_instance_pos_neg(instance_data, label_range,
                                                                                        node_parent)
         # split the data using the best variable to get best split
@@ -279,10 +301,12 @@ def makeSubtree(instance_data, label_range, var_in_tree, num_var, var_types, var
 
             # add child(less equal) to the parent node children list
             child_lessequal = makeSubtree(instance_sub_lessequal, label_range,  var_in_tree, num_var, var_types, var_names, var_ranges, node)
+            child_lessequal.branch = "<= " + ("{0:.6f}".format(node.threshold))
             node.children.append(child_lessequal)
 
             # add child(greater) to the parent node children list
             child_greater = makeSubtree(instance_sub_greater, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, node)
+            child_greater.branch = "> " + ("{0:.6f}".format(node.threshold))
             node.children.append(child_greater)
 
         # if this is a nominal variable
@@ -294,9 +318,36 @@ def makeSubtree(instance_data, label_range, var_in_tree, num_var, var_types, var
 
             # for each subset after split
             for i in range(len(instance_split)):
-                node.branch = this_var_range[i]
                 child_sub = makeSubtree(instance_split[i], label_range, var_in_tree, num_var, var_types, var_names, var_ranges, node)
+                child_sub.branch = "= " + str(this_var_range[i])
                 node.children.append(child_sub)
-    print("Node name", node.var_name)
+#    print("Node name", node.var_name)
     return node
 
+
+def dt_prediction(node, instance, var_ranges):
+    if node.is_leaf:
+        return node.major_label
+    else:
+        var_idx = node.var_idx  # get the index of the variable in instance
+        if node.node_type == 'numeric':
+            if instance[var_idx] <= node.threshold:
+                node_next = node.children[0]
+            else:
+                node_next = node.children[1]
+        else:
+            this_var_range = var_ranges[var_idx]
+            for i in range(len(this_var_range)):
+                if instance[var_idx] == this_var_range[i]:
+                    node_next = node.children[i]
+        return dt_prediction(node_next, instance, var_ranges)
+
+
+def comp_accuracy_test(instance_data_label, instance_data_prediction):
+
+    if len(instance_data_label) == len(instance_data_prediction):
+        num_instance = len(instance_data_label)
+        num_correct_pred = sum(np.array([instance_data_label[i] == instance_data_prediction[i] for i in range(num_instance)]))
+        return num_correct_pred
+    else:
+        return 0
