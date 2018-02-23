@@ -8,6 +8,7 @@ Build a ID3 like decision tree
 """
 import numpy as np
 import scipy as sp
+import tree_node as tn
 
 
 def comp_entropy(instance_label, label_range):
@@ -17,7 +18,8 @@ def comp_entropy(instance_label, label_range):
     :param label_range: range of the labels
     :return: entropy
     """
-
+    if len(instance_label) == 0:
+        return 0
     # number of instances having one same class
     # select one class to count the total number, e.g., label_range[0]
     num_instance = len(instance_label)
@@ -57,6 +59,7 @@ def split_data_nominal(instance_data, var_idx, this_var_range):
 
 
 def split_data_numeric(instance_data, var_idx, threshold):
+
     instance_sub_lessequal = []
     instance_sub_greater = []
 
@@ -80,6 +83,8 @@ def comp_entropy_split_post(instance_split, instance_entire, label_range):
     return entropy
 
 def numeric_split_min_entropy_threshold(instance_data, var_idx, label_range):
+    # test if the length of instance data is 0 or 1 or 2, in case index error in array
+
     # extract the value of the ith variable, i = var_idx
     var_val = [ins[var_idx] for ins in instance_data]
 
@@ -116,6 +121,8 @@ def comp_conditional_entropy(instance_data, label_range, var_in_tree, num_var, v
     :param var_range:
     :return:
     """
+    if len(instance_data) == 0:
+        return 0
     # number of variables as input for binary classification, the last variable is output "class", should be excluded
     num_var_input = num_var - 1
     # generate an array to store the entropy conditioned on each attribute after split
@@ -143,6 +150,9 @@ def comp_conditional_entropy(instance_data, label_range, var_in_tree, num_var, v
 
 def comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_range):
     # compute information gain for all features
+    if len(instance_data) == 0:
+        return 0
+
     # extract labels for each instance
     instance_label = [instance_data[i][-1] for i in range(len(instance_data))]
     # compute entropy before split
@@ -192,8 +202,37 @@ def stop_grow_tree(instance_data, info_gain, var_in_tree, m):
 
     return False
 
+def num_node_instance_pos_neg(instance_data, label_range, node_parent):
+    """
+    Count the number of positive and negative instances in current node
+    :param instance_data:
+    :return:
+    """
+    # get the lable of instance data
+    instance_label = [ins[-1] for ins in instance_data]
 
-def makeSubtree(instance_data, label_range, var_name_tree, var_in_tree, var_val_cur, num_var, var_types, var_names, var_range):
+    # count the number of positive and negative instances in current node
+    num_label_0 = sum(np.array([label_range[0] == lb for lb in instance_label]))
+    num_label_1 = len(instance_label) - num_label_0
+
+    # determine the label for this node
+    if node_parent != None:
+        if num_label_0 > num_label_1:
+            major_label = label_range[0]
+        elif num_label_0 < num_label_1:
+            major_label = label_range[1]
+        else:
+            major_label = node_parent.major_label
+    else:
+        if num_label_0 >= num_label_1:
+            major_label = label_range[0]
+        else:
+            major_label = label_range[1]
+
+    return major_label, num_label_0, num_label_1
+
+
+def makeSubtree(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, node_parent):
     """
     Build the decision tree
     :param instance_data_trn: training data, including multiple instances
@@ -206,12 +245,58 @@ def makeSubtree(instance_data, label_range, var_name_tree, var_in_tree, var_val_
     decision_tree_ID3 = 47 # delete this line when completing the program
 
     # compute the current information gain to check if stop or not
-    info_gain = comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_range)
+    info_gain = comp_info_gain(instance_data, label_range, var_in_tree, num_var, var_types, var_names, var_ranges)
 
+    # create a node
+    node = tn.tree_node()
+    node.parent = node_parent
+
+    # if this is a leaf node
     if stop_grow_tree(instance_data, info_gain, var_in_tree, 5):
-        is_leaf = True
-        return is_leaf
+        node.is_leaf = True
+        node.major_label, node.num_label_0, node.num_label_1 = num_node_instance_pos_neg(instance_data, label_range, node_parent)
+        return node
 
+    # if this not a leaf node, start spliting
+    else:
+        var_split_idx = np.argmax(info_gain) # find the index of the variable for best split
 
-    return decision_tree_ID3
+        # start creating the tree
+
+        node.is_leaf = False
+        node.var_name = var_names[var_split_idx]
+        node.node_type = var_types[var_split_idx]
+        node.major_label, node.num_label_0, node.num_label_1 = num_node_instance_pos_neg(instance_data, label_range,
+                                                                                       node_parent)
+        # split the data using the best variable to get best split
+        # if this is a numeric variable
+        if node.node_type == "numeric":
+            # determine the threshold for numeric variable
+            _, node.threshold = numeric_split_min_entropy_threshold(instance_data, var_split_idx, label_range)
+
+            # split the current instance data
+            [instance_sub_lessequal, instance_sub_greater] = split_data_numeric(instance_data, var_split_idx, node.threshold)
+
+            # add child(less equal) to the parent node children list
+            child_lessequal = makeSubtree(instance_sub_lessequal, label_range,  var_in_tree, num_var, var_types, var_names, var_ranges, node)
+            node.children.append(child_lessequal)
+
+            # add child(greater) to the parent node children list
+            child_greater = makeSubtree(instance_sub_greater, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, node)
+            node.children.append(child_greater)
+
+        # if this is a nominal variable
+        else:
+            # get the range of this variable
+            this_var_range = var_ranges[var_split_idx]
+            # split the current instance data
+            instance_split = split_data_nominal(instance_data, var_split_idx, this_var_range)
+
+            # for each subset after split
+            for i in range(len(instance_split)):
+                node.branch = this_var_range[i]
+                child_sub = makeSubtree(instance_split[i], label_range, var_in_tree, num_var, var_types, var_names, var_ranges, node)
+                node.children.append(child_sub)
+    print("Node name", node.var_name)
+    return node
 

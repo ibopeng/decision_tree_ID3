@@ -24,7 +24,7 @@ tn = ~np.isnan(tt)
 #filename_trn, filename_test, m = ld.read_cmdln_arg()
 
 """ Load training data and testing data, and corresponding parameters"""
-instance_data_trn, meta_data, var_range, var_unique_val = ld.load_data('credit_train.arff')
+instance_data_trn, meta_data, var_ranges, var_unique_val = ld.load_data('credit_train.arff')
 
 
 # variables already in tree or not, bool type, True and False
@@ -34,14 +34,14 @@ var_names = meta_data.names()
 
 var_in_tree = np.zeros(num_var - 1, dtype=bool)
 # the range of instances labels, i.e., '+' and '-'
-label_range = var_range[-1]
+label_range = var_ranges[-1]
 # name of each variable
 var_names = meta_data.names()
 
 # build the tree
 var_val_cur = None
 var_name_tree = None # this para should be taken good care of
-decision_tree_ID3 = dt.makeSubtree(instance_data_trn, label_range, var_name_tree, var_in_tree, var_val_cur, num_var, var_types, var_names, var_range)
+decision_tree_ID3 = dt.makeSubtree(instance_data_trn, label_range, var_in_tree, num_var, var_types, var_names, var_ranges, None)
 
 
 
