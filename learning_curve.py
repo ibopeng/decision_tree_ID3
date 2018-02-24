@@ -37,8 +37,8 @@ label_range = var_ranges[-1] # the range of instances labels, i.e., '+' and '-'
 
 # define the training set size proportion
 full_set_size = len(instance_data_trn)
-train_set_percent = [0.05, 0.10, 0.20, 0.50, 1.00]
-train_set_size = [int(full_set_size * percent) for percent in train_set_percent]
+train_set_percent = [5, 10, 20, 50, 100]
+train_set_size = [int(full_set_size * percent / 100) for percent in train_set_percent]
 
 num_draw = 10  # randomly draw the subset 10 times
 acc_subset_size = []
@@ -80,9 +80,9 @@ for sub_size in train_set_size:
     acc_subset_size.append([avg_acc_sub_draw, min_acc_sub_draw, max_acc_sub_draw])
 
 # plot the learning curve
-plt.plot(train_set_size, np.array([acc_avg[0] for acc_avg in acc_subset_size]), label = 'Average')
-plt.plot(train_set_size, np.array([acc_avg[1] for acc_avg in acc_subset_size]), label = 'Min')
-plt.plot(train_set_size, np.array([acc_avg[2] for acc_avg in acc_subset_size]), label = 'Max')
+plt.plot(train_set_percent, np.array([acc_avg[0] for acc_avg in acc_subset_size]), label = 'Average')
+plt.plot(train_set_percent, np.array([acc_avg[1] for acc_avg in acc_subset_size]), label = 'Min')
+plt.plot(train_set_percent, np.array([acc_avg[2] for acc_avg in acc_subset_size]), label = 'Max')
 plt.legend()
 plt.grid()
 plt.title('Learning curve for credit data')
