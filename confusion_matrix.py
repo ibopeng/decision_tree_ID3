@@ -9,7 +9,7 @@ y_pred = np.array([data[i][0] for i in range(len(data))])
 y_true = np.array([data[i][1] for i in range(len(data))])
 
 # compute confusion matrix
-conf_mat = confusion_matrix(y_pred, y_true)
+conf_mat = confusion_matrix(y_true, y_pred)
 
 # print out the result
 print("Every row indicates true class whereas column indicates predicted class")

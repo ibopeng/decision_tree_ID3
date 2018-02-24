@@ -21,20 +21,6 @@ def read_cmdln_arg():
         m = int(str(sys.argv[3]))
     return filename_trn, filename_test, m
 
-def extract_var_unique_val(instance_data, meta_data):
-    """extract unique values for each variable"""
-    var_uique_val = []
-    num_var = len(meta_data.names()) # number of variables
-
-    for i in range(num_var):
-        var_val = [] # value of current ith variable
-        # append the ith feature value of the current instance
-        for ins in instance_data:
-            var_val.append(ins[i]) # add value corresponding to the ith variable in each instance to the array var_val
-
-        # extract unique value for this variable and sort these unique values
-        var_uique_val.append(sorted(list(set(var_val))))
-    return var_uique_val
 
 def load_data(filename):
     """
@@ -54,7 +40,4 @@ def load_data(filename):
     for name in meta_data.names():
         var_range.append(meta_data[name][1])
 
-    # for each variable, including nomial and numeric variable, extract possible unique values
-    var_unique_val = extract_var_unique_val(instance_data, meta_data)
-
-    return instance_data, meta_data, var_range, var_unique_val
+    return instance_data, meta_data, var_range
