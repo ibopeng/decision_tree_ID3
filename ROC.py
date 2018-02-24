@@ -12,13 +12,14 @@ import dt_func as dt
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def dt_confidence(node, instance, var_ranges):
     """
     # compute the confidence of this instance
     :param node: root node of the trained decision tree
     :param instance: a single instance
     :param var_ranges: [list] possible values of each variable
-    :return: predicted label
+    :return: confidence of this instance
     """
 
     # the major label of the leaf node is returned as the predicted label
@@ -44,6 +45,13 @@ def dt_confidence(node, instance, var_ranges):
 
 
 def ROC(test_confidence, test_label):
+    """
+    Compute the ROC array
+    :param test_confidence: confidence of test instances
+    :param test_label: true label of test instances
+    :return: ROC array
+    """
+
     test_confidence = np.array(test_confidence)
 
     # compute actual number of positive and negative instances
@@ -53,12 +61,13 @@ def ROC(test_confidence, test_label):
 
     # for each threshold, compute the TP and FP
     ROC_array = []
-    threshold_list = np.sort(np.array(test_confidence))
+
     zipped = zip(test_confidence, test_label)
-    zipped.sort(key = lambda t: t[0])
-    zipped.reverse()
-    test_confidence = [zip_tuple[0] for zip_tuple in zipped]
-    test_label = [zip_tuple[1] for zip_tuple in zipped]
+    zipped.sort(key = lambda t: t[0]) # sort confidence and label based on confidence, ascending order
+    zipped.reverse() # sort the confidence from high to low, descending order
+    [test_confidence, test_label] = zip(*zipped)
+#    test_confidence = [zip_tuple[0] for zip_tuple in zipped]
+#    test_label = [zip_tuple[1] for zip_tuple in zipped]
 
     cutoff = []
     cutoff.append(1)
@@ -122,8 +131,7 @@ np.savetxt('confidence.txt', threshold_list)
 
 ROC_array = ROC(test_confidence, test_label)
 
-x_FP = np.array([FPR[0] for FPR in ROC_array])
-y_TP = np.array([TPR[1] for TPR in ROC_array])
+[x_FP, y_TP] = zip(*ROC_array)
 plt.plot(x_FP, y_TP)
 plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')
