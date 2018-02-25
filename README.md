@@ -1,5 +1,5 @@
 # decision_tree_ID3
-This is a course homework project for CS760 University of Wisconsin - Madison
+
 Decision tree learning algorithm ID3 for classification
 
 Scritp information:
